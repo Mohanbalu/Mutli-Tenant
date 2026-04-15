@@ -19,6 +19,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.cors.CorsConfigurationSource;
+
+import java.util.List;
+
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -31,20 +37,20 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            // ✅ ENABLE CORS (VERY IMPORTANT)
+            // ✅ ENABLE CORS
             .cors().and()
 
-            // ❌ Disable CSRF (for APIs)
+            // ❌ Disable CSRF
             .csrf(AbstractHttpConfigurer::disable)
 
-            // ✅ Configure endpoints
+            // ✅ Public endpoints
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/public/**").permitAll()
                 .anyRequest().authenticated()
             )
 
-            // ✅ Stateless session (JWT)
+            // ✅ Stateless session
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
@@ -56,6 +62,29 @@ public class SecurityConfig {
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    // ✅ THIS IS THE MOST IMPORTANT PART (CORS FIX)
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+
+        configuration.setAllowedOrigins(
+                List.of("https://mutli-tenant-1.onrender.com")
+        );
+
+        configuration.setAllowedMethods(
+                List.of("GET", "POST", "PUT", "DELETE", "OPTIONS")
+        );
+
+        configuration.setAllowedHeaders(List.of("*"));
+
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+
+        return source;
     }
 
     @Bean
